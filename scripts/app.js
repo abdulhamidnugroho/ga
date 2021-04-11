@@ -186,7 +186,7 @@ Population.prototype.generate = function() {
   //stop iteration after 100th generation
   //this assumption is arbitrary that the solution would converge after reaching
   //the 100th generation, there can be other criteria like no change in fitness
-  if (this.generation >= 100) {
+  if (this.generation >= 50) {
     return true;
   }
 
@@ -194,7 +194,7 @@ Population.prototype.generate = function() {
   var scope = this;
   setTimeout(function() {
     scope.generate();
-  }, 100);
+  }, 250);
 }
 
 // code to generate the population and draw it on the Canvas
