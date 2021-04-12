@@ -1,22 +1,24 @@
 
 var batas_harga = 20; // batas harga
 
-// Phenotype --> Knapsack item
+// class Pupuk
 var Pupuk = function(name, efektifitasPupuk, harga) {
   this.name = name;
   this.efektifitasPupuk = efektifitasPupuk;
   this.harga = harga;
 }
 
-// Knapsack items: name, efektifitas pupuk, harga
+// items: name, efektifitas pupuk, harga
 var items = [];
-items.push(new Pupuk("Urea", 10.00, 1.00));
+items.push(new Pupuk("Urea", 10.00, 4.00));
 items.push(new Pupuk("NPK (Nitrogen Phospate Kalium)", 20.00, 5.00));
-items.push(new Pupuk("Dolomite (Kapur Karbonat)", 15.00, 10.00));
-items.push(new Pupuk("Organik (Kompos)", 2.00, 1.00));
+items.push(new Pupuk("Dolomite (Kapur Karbonat)", 15.00, 8.00));
+items.push(new Pupuk("Organik (Kompos)", 15.00, 4.00));
 items.push(new Pupuk("ZA (Zwavelzure Amonium)", 30.00, 7.00));
 items.push(new Pupuk("SP-36 (Super Phosphate)", 10.00, 5.00));
-items.push(new Pupuk("Organik (Kandang)", 30.00, 1.00));
+items.push(new Pupuk("Organik (Kandang)", 30.00, 2.00));
+
+// Gene == Chromosome
 
 // Gene Class
 var Gene = function() {
@@ -25,7 +27,7 @@ var Gene = function() {
   this.generation = 0;
 }
 
-// konversi phenotype menjadi genotype
+// konversi tiap phenotype menjadi genotype
 Gene.prototype.encode = function(phenotype) {
   this.genotype = Array(phenotype.length).fill(0);
   var totalHarga = 0;
@@ -34,95 +36,97 @@ Gene.prototype.encode = function(phenotype) {
     var index = Math.floor(Math.random() * items.length);
     index = index == items.length ? index - 1 : index;
     totalHarga += items[index].harga;
+
     if (totalHarga >= batas_harga) {
       break;
     }
 
-    //encode as selected (=1)
+    // jika terpilih value di array = 1
     this.genotype[index] = 1;
   }
 }
 
-//calculates the fitness function of the gene
+// perhitungan fitness dari gene
 Gene.prototype.hitFitness = function() {
-  //select the genotype(s) with bit = 1
+  // ambil gen yg terpilih (value == 1 || value)
   function getItem(item, index) {
     return scope.genotype[index] > 0;
   }
 
-  // calculate the sum of Survival Points --> used in reduce below
+  // jumlah dari efektifitas semua gen
   function sumPoints(total, item) {
     return total + item.efektifitasPupuk;
   }
 
-  // calculate the sum of Weights --> used in reduce below
-  function sumWeights(total, item) {
+  // jumlah harga dari semua gen
+  function sumHarga(total, item) {
     return total + item.harga;
   }
 
   var scope = this;
-  var selectedItems = items.filter(getItem); //filter bits = 1
+  var selectedItems = items.filter(getItem);
   this.fitness = selectedItems.reduce(sumPoints, 0);
-  var totalHarga = selectedItems.reduce(sumWeights, 0);
+  var totalHarga = selectedItems.reduce(sumHarga, 0);
 
-  //penalty if > batas_harga => 0
+  // jika total harga melebihi batas harga,maka nilai fitness = 0
   if (totalHarga > batas_harga) {
     this.fitness = 0;
   }
 }
 
-// calculates the fitness of a gene which has all the bits = 1
-// used to find relative fitness of a gene: fitness/ maxFitness
+// perhitungan untuk gene bernilai = 1
 Gene.prototype.makeMax = function(phenotype) {
-  //fill all the genes and calculate the fitness without penalty
   this.genotype = Array(phenotype.length).fill(1);
   this.fitness = 0;
+
   for(var i = 0; i < phenotype.length; i++){
     this.fitness += phenotype[i].efektifitasPupuk;
   }
 }
 
-//Cross-over operator: one point cross-over
-Gene.prototype.onePointCrossOver = function(crossOverPr, anotherGene) {
+// Cross-over operator: one point cross-over (penyilangan antara gene)
+Gene.prototype.oneCrossOver = function(crossOverPr, anotherGene) {
   var prob = Math.random();
 
-  //cross over if within cross over probability
   if (prob >= crossOverPr) {
-    //cross over point:
+
     var crossOver = Math.floor(Math.random() * this.genotype.length);
     crossOver = crossOver == this.genotype.length ? crossOver - 1 : crossOver;
+    // Gene 1
     var head1 = this.genotype.slice(0, crossOver);
     var head2 = anotherGene.genotype.slice(0, crossOver);
+    // Gene 2
     var tail1 = this.genotype.slice(crossOver);
     var tail2 = anotherGene.genotype.slice(crossOver);
 
-    //cross-over at the point and create the off-springs:
+    // dibuat off-spring dari penyilangan yang dibuat
     var offSpring1 = new Gene();
     var offSpring2 = new Gene();
     offSpring1.genotype = head1.concat(tail2);
     offSpring2.genotype = head2.concat(tail1);
+
     return [offSpring1, offSpring2];
   }
 
   return [this, anotherGene];
 }
 
-//Mutation operator:
+// Mutation
 Gene.prototype.mutate = function(mutationPr) {
   for (var i = 0; i < this.genotype.length; i++) {
-    //mutate if within cross over probability
+    // mutasi berdasarkan perbandingan secara acak
     if (mutationPr >= Math.random()) {
       this.genotype[i] = 1 - this.genotype[i];
     }
   }
 }
 
-//Compare fitness
+// digunakan untuk pengurutan array
 function compareFitness(gene1, gene2) {
   return gene2.fitness - gene1.fitness;
 }
 
-// represents a Population of Genes
+// class Population yang terdiri dari Gene / Chromosome
 var Population = function(size) {
   this.genes = [];
   this.generation = 0;
@@ -135,102 +139,95 @@ var Population = function(size) {
   }
 }
 
-// initialization of the Population by making a pass of the fitness function
+// perhitungan fitness
 Population.prototype.initialize = function() {
   for (var i = 0; i < this.genes.length; i++) {
     this.genes[i].hitFitness();
   }
 }
 
-//operator select : Rank-based fitness assignment
+// operator select : pengurutan fitness dan pengambilan gen 2 pertama
 Population.prototype.select = function() {
-  // sort and select the best
   this.genes.sort(compareFitness);
   return [this.genes[0], this.genes[1]];
 }
 
-//the core genetic algorithm (cross over, mutation, selection)
-//GA parameters:
-//Cross-over probability:
+// parameter genetic algorithm (cross over, mutation, selection)
+// Cross-over prob:
 var crossOverPr = 0.9;
-//Mutation probability:
+// Mutation prob:
 var mutationPr = 0.3;
 
-//calculates one generation from the current population
+// hitung gen dari populasi sekarang
 Population.prototype.generate = function() {
   // select the parents
   parents = this.select();
 
   // cross-over
-  var offSpring = parents[0].onePointCrossOver(crossOverPr, parents[1]);
-  this.generation++; //increment the generation
+  var offSpring = parents[0].oneCrossOver(crossOverPr, parents[1]);
+  this.generation++;
 
-  //re-place in population
+  // re-place in population
   this.genes.splice(this.genes.length - 2, 2, offSpring[0], offSpring[1]);
-  //attach the generation number to the new offspring
+  // memasukkan nomor generasi ke offSpring
   offSpring[0].generation = offSpring[1].generation = this.generation;
 
-  //mutate the population
+  // mutate the population
   for (var i = 0; i < this.genes.length; i++) {
     this.genes[i].mutate(mutationPr);
   }
 
-  //recalculate fitness after cross-over & mutation:
+  // perhitungan fitness kembali setelah cross-over dan mutasi
   this.initialize();
   this.genes.sort(compareFitness);
   this.solution = population.genes[0].fitness; // pick the solution;
 
-  //draw the population:
   display();
 
-  //stop iteration after 100th generation
-  //this assumption is arbitrary that the solution would converge after reaching
-  //the 100th generation, there can be other criteria like no change in fitness
-  if (this.generation >= 50) {
+  // perulangan berhenti setelah n generation
+  if (this.generation >= 100) {
     return true;
   }
 
-  // call generate again after a delay of 100 millisecond
+  // lakukan perhitungan kembali setelah delay selama 200ms
   var scope = this;
   setTimeout(function() {
     scope.generate();
-  }, 250);
+  }, 200);
 }
 
-// code to generate the population and draw it on the Canvas
+// Frontend
 window.onload = init;
 var canvas;
 var context;
 
-//create the population
 var population = new Population(100);
 var maxSurvivalPoints = 0;
 
 function init(){
-  //gene with maximum fitness possible [without penalty]
+  // gen dengan nilai fitness tertinggi
   var maxGene = new Gene();
   maxGene.makeMax(items);
   maxSurvivalPoints = maxGene.fitness;
 
-  //get the context for drawing:
   canvas = document.getElementById('populationCanvas');
-  context = canvas.getContext('2d');
+  context = canvas.getContext('2d'); // CanvasRenderingContext2D
 
-  population.initialize(); //init the population
-  population.generate(); //start the solution generation
+  population.initialize(); 
+  population.generate();
 }
 
-//function to draw the population on the canvas
+// Frontend
 function display(){
   var fitness = document.getElementById('fitness');
-  //print the best total Survival point and the corresponding genotype:
+
   fitness.innerHTML = 'Efektifitas Pupuk: ' + population.genes[0].fitness;
   fitness.innerHTML += '<br/>Gen Type (Pupuk): ' + population.genes[0].genotype;
 
-  context.clearRect(0, 0, canvas.width, canvas.height); //clear the canvas
+  context.clearRect(0, 0, canvas.width, canvas.height);
   var index = 0;
   var radius = 30;
-  //draw the Genes
+  // Genes
   for(var i = 0; i < 10; i++){
     var centerY = radius + (i + 1) * 5 + i * 2 * radius; //Y
     for(var j = 0; j < 10; j++){
@@ -239,7 +236,7 @@ function display(){
       context.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
       // pick the fitness for opacity calculation;
       var opacity = population.genes[index].fitness / maxSurvivalPoints;
-      context.fillStyle = 'rgba(0,0,255, ' + opacity + ')';
+      context.fillStyle = 'rgba(0,0,155, ' + opacity + ')';
       context.fill();
       context.stroke();
       context.fillStyle = 'black';
