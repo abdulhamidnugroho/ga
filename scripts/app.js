@@ -10,13 +10,13 @@ var Pupuk = function(name, efektifitasPupuk, harga) {
 
 // items: name, efektifitas pupuk, harga
 var items = [];
-items.push(new Pupuk("Urea", 10.00, 4.00));
+items.push(new Pupuk("Urea", 18.00, 4.00));
 items.push(new Pupuk("NPK (Nitrogen Phospate Kalium)", 20.00, 5.00));
 items.push(new Pupuk("Dolomite (Kapur Karbonat)", 15.00, 8.00));
-items.push(new Pupuk("Organik (Kompos)", 15.00, 4.00));
-items.push(new Pupuk("ZA (Zwavelzure Amonium)", 30.00, 7.00));
-items.push(new Pupuk("SP-36 (Super Phosphate)", 10.00, 5.00));
-items.push(new Pupuk("Organik (Kandang)", 30.00, 2.00));
+items.push(new Pupuk("Organik (Kompos)", 27.00, 4.00));
+items.push(new Pupuk("ZA (Zwavelzure Amonium)", 23.00, 7.00));
+items.push(new Pupuk("SP-36 (Super Phosphate)", 17.00, 6.00));
+items.push(new Pupuk("Organik (Kandang)", 21.00, 2.00));
 
 // Gene == Chromosome
 
@@ -185,7 +185,7 @@ Population.prototype.generate = function() {
   display();
 
   // perulangan berhenti setelah n generation
-  if (this.generation >= 100) {
+  if (this.generation >= 50) {
     return true;
   }
 
@@ -193,7 +193,7 @@ Population.prototype.generate = function() {
   var scope = this;
   setTimeout(function() {
     scope.generate();
-  }, 200);
+  }, 150);
 }
 
 // Frontend
@@ -201,7 +201,7 @@ window.onload = init;
 var canvas;
 var context;
 
-var population = new Population(100);
+var population = new Population(50);
 var maxSurvivalPoints = 0;
 
 function init(){
@@ -220,7 +220,7 @@ function init(){
 // Frontend
 function display(){
   var fitness = document.getElementById('fitness');
-
+  console.log(population.genes[0]);
   fitness.innerHTML = 'Efektifitas Pupuk: ' + population.genes[0].fitness;
   fitness.innerHTML += '<br/>Gen Type (Pupuk): ' + population.genes[0].genotype;
 
@@ -228,15 +228,15 @@ function display(){
   var index = 0;
   var radius = 30;
   // Genes
-  for(var i = 0; i < 10; i++){
+  for(var i = 0; i < 5; i++){
     var centerY = radius + (i + 1) * 5 + i * 2 * radius; //Y
-    for(var j = 0; j < 10; j++){
+    for(var j = 0; j < 5; j++){
       var centerX = radius + (j + 1) * 5 + j * 2 * radius; //X
       context.beginPath();
       context.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
       // pick the fitness for opacity calculation;
       var opacity = population.genes[index].fitness / maxSurvivalPoints;
-      context.fillStyle = 'rgba(0,0,155, ' + opacity + ')';
+      context.fillStyle = 'rgba(0,200,155, ' + opacity + ')';
       context.fill();
       context.stroke();
       context.fillStyle = 'black';
